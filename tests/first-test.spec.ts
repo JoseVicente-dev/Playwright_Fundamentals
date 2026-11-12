@@ -3,8 +3,8 @@ import { test } from '@playwright/test';
 /**
  * This is a test suite. We use the method 'describe()'
  */
-test.describe('This is the name of a test suite',()=>{
-    
+test.describe('This is the name of a test suite', () => {
+
     /**
      * This is a single test
      * The callback function receives a Playwright 'Fixture'. In this case, it's {page}
@@ -14,22 +14,22 @@ test.describe('This is the name of a test suite',()=>{
      * - Rejected: the Promise tried to be resolved but was not able to do it within an interval
      * 
      */
-    test('This is the name of the 1st test', async({page})=>{
-       await page.goto("https://playground.bondaracademy.com")
-       await page.getByText('Forms').click()
-       await page.getByText('Form Layouts').click()
+    test('This is the name of the 1st test', async ({ page }) => {
+        await page.goto("https://playground.bondaracademy.com")
+        await page.getByText('Forms').click()
+        await page.getByText('Form Layouts').click()
     }
     )
-    
-    test('This is the name of the 2nd test',async ({page})=>{
-       await page.goto("https://playground.bondaracademy.com")
-       await page.getByText('Forms').click()
-       await page.getByText('Form Layouts').click()
-    }   
+
+    test('This is the name of the 2nd test', async ({ page }) => {
+        await page.goto("https://playground.bondaracademy.com")
+        await page.getByText('Forms').click()
+        await page.getByText('Form Layouts').click()
+    }
     )
-    
-    test('This is the name of the 3rd test',()=>{
-    
+
+    test('This is the name of the 3rd test', () => {
+
     }
     )
 
@@ -38,23 +38,23 @@ test.describe('This is the name of a test suite',()=>{
 /**
  * This is another test suite
  */
-test.describe('This is the name of another test suite',()=>{
-    
+test.describe('This is the name of another test suite', () => {
+
     /**
      * This is a single test
      */
-    test('This is the name of the 1st test',()=>{
-        
+    test('This is the name of the 1st test', () => {
+
     }
     )
-    
-    test('This is the name of the 2nd test',()=>{
-    
+
+    test('This is the name of the 2nd test', () => {
+
     }
     )
-    
-    test('This is the name of the 3rd test',()=>{
-    
+
+    test('This is the name of the 3rd test', () => {
+
     }
     )
 

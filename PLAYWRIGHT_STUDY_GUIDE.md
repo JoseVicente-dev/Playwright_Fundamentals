@@ -288,113 +288,140 @@ Playwright statically inspects the parameter list of your test function before r
 
 ---
 
-### Why is `page` Passed as `{ page }`? (JavaScript Object Destructuring & Fixtures)
+### Test Lifecycle Hooks
 
-A common question when writing your first Playwright test is why the callback argument is enclosed in curly braces `{ page }` instead of a plain parameter `page`:
+Hooks are lifecycle methods that allow you to set up preconditions and clean up state without duplicating code across individual tests.
 
-```typescript
-// ❌ WRONG (treating fixtures as a single positional parameter):
-test('invalid parameter syntax', async (page) => {
-  // 'page' is NOT the Page object here! It is the entire fixtures object: { page, context, browser, ... }
-  // Calling page.goto(...) will result in a TypeError!
-});
+#### The 4 Core Hooks
 
-// ✅ CORRECT (using ES6 object destructuring):
-test('valid parameter syntax', async ({ page }) => {
-  await page.goto('https://example.com');
-});
-```
-
-This syntax is governed by two core concepts: **ES6 Object Destructuring** and **Playwright Fixtures**.
-
-#### 1. Under the Hood: A Single Fixtures Object
-Playwright's test runner does not pass individual positional arguments to your callback function. Instead, it passes a **single container object** holding all available testing resources (called *Fixtures*):
-
-```javascript
-// What Playwright internally delivers to your test callback:
-{
-  page: [Page Object],
-  context: [BrowserContext Object],
-  browser: [Browser Object],
-  browserName: 'chromium',
-  request: [APIRequestContext Object],
-  // ...other configured fixtures
-}
-```
-
-* **Without destructuring (traditional syntax):** You would have to accept the whole object and access `.page` repeatedly:
-  ```typescript
-  test('without destructuring', async (fixtures) => {
-    await fixtures.page.goto('https://example.com');
-    console.log(fixtures.browserName);
-  });
-  ```
-* **With destructuring (`{ page }`):** JavaScript extracts the `page` property directly into a standalone local variable, keeping your test code concise and clean:
-  ```typescript
-  test('with destructuring', async ({ page }) => {
-    await page.goto('https://example.com');
-  });
-  ```
-
-#### 2. Key Architectural Benefits
-
-##### A. Order Independence & Selective Usage
-Unlike standard positional parameters (`function(a, b, c)`) where you must pass placeholder arguments or follow a strict order, object destructuring allows you to request only what you need, in any order:
-
-```typescript
-// Only need to run API calls (no browser opened):
-test('test api endpoint', async ({ request }) => { ... });
-
-// Need both page and the current browser's name:
-test('cross-browser check', async ({ page, browserName }) => { ... });
-
-// Need raw browser access to spin up multiple contexts:
-test('multi-user session', async ({ browser }) => { ... });
-```
-
-##### B. On-Demand / Lazy Fixture Initialization
-Playwright statically inspects the parameter list of your test function before running it:
-* If you **omit** `{ page }` (e.g., when you only ask for `{ request }`), Playwright **never spins up a browser window or tab**, saving significant CPU, memory, and execution time.
-* Playwright only prepares and initializes the exact fixtures you explicitly declared inside `{ ... }`.
+| Hook | When It Runs | Common Use Cases | Access to `{ page }`? |
+| :--- | :--- | :--- | :---: |
+| **`test.beforeAll()`** | **Once** before any test runs in its scope | Global test data setup, seeding databases, generating auth tokens via API. | ❌ No (no page exists yet; can access `{ browser }`) |
+| **`test.beforeEach()`** | **Before every single test** in its scope | Navigating (`page.goto`), logging in, setting up UI preconditions. | ✅ Yes (receives fresh isolated `{ page }`) |
+| **`test.afterEach()`** | **After every single test** in its scope | Capturing failure screenshots, resetting UI state, logging test duration. | ✅ Yes |
+| **`test.afterAll()`** | **Once** after all tests finish in its scope | Deleting test records from DB, closing shared connections, cleanup. | ❌ No |
 
 ---
 
-### Test Lifecycle Hooks
+#### Lifecycle Execution Order
+
+```
+[File / Suite Initialization]
+       │
+       ▼
+test.beforeAll()           ──▶ Runs ONCE before any test
+       │
+       ├─▶ test.beforeEach()   ──▶ Brand-new BrowserContext & Page initialized
+       │   test('Test 1')      ──▶ Executes test steps
+       │   test.afterEach()    ──▶ Teardown; context & page destroyed
+       │
+       ├─▶ test.beforeEach()   ──▶ Brand-new BrowserContext & Page initialized (100% clean isolation)
+       │   test('Test 2')      ──▶ Executes test steps
+       │   test.afterEach()    ──▶ Teardown; context & page destroyed
+       │
+       ▼
+test.afterAll()            ──▶ Runs ONCE after all tests complete
+[File / Suite Complete]
+```
+
+---
+
+#### Hook Scopes: Root-Level vs. Describe-Level
+
+Hooks respect block-level lexical scope:
+
+1. **Root-Level Hook (File Scope):**
+   Placed outside of any `test.describe()` block. It executes before/after **every single test** in the entire file, across all suites:
+   ```typescript
+   import { test, expect } from '@playwright/test';
+
+   // 🌐 Root hook: Runs before EVERY test in Suite A AND Suite B
+   test.beforeEach(async ({ page }) => {
+     await page.goto('https://playground.bondaracademy.com');
+   });
+
+   test.describe('Suite A', () => { ... });
+   test.describe('Suite B', () => { ... });
+   ```
+
+2. **Describe-Level Hook (Group Scope):**
+   Placed inside a `test.describe()` block. It executes **only** for tests defined inside that specific group:
+   ```typescript
+   test.describe('Forms Suite', () => {
+     // Runs only for tests inside 'Forms Suite'
+     test.beforeEach(async ({ page }) => {
+       await page.getByText('Forms').click();
+     });
+
+     test('Form Layouts', async ({ page }) => { ... });
+   });
+   ```
+
+3. **Nested Scope Execution Order:**
+   When you nest describe blocks, parent hooks always execute first:
+   ```
+   Outer test.beforeEach() ──▶ Inner test.beforeEach() ──▶ Test ──▶ Inner test.afterEach() ──▶ Outer test.afterEach()
+   ```
+
+---
+
+#### Hook Signatures & Optional Titles
+
+Playwright supports two signatures for all hooks:
+* **Anonymous Hook:** `test.beforeEach(hookFunction)`
+* **Named Hook (with Title):** `test.beforeEach(title, hookFunction)`
+
+```typescript
+// 1. Anonymous (Standard & most common):
+test.beforeEach(async ({ page }) => {
+  await page.goto('/login');
+});
+
+// 2. Named with a Title (Labels the hook step in HTML reports and Trace Viewer):
+test.beforeEach('Navigate to application and expand navigation menu', async ({ page }) => {
+  await page.goto('https://playground.bondaracademy.com');
+  await page.getByText('Forms').click();
+});
+```
+
+---
+
+#### Complete Multi-Suite Example
 
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test.describe('Shopping Cart Feature', () => {
+// 1. Root-level hook: Shared starting point for all suites
+test.beforeEach(async ({ page }) => {
+  await page.goto('https://playground.bondaracademy.com');
+});
 
-  // Runs ONCE before all tests in this describe block (e.g., database seed, test setup)
-  test.beforeAll(async () => {
-    console.log('--- Starting Cart Suite ---');
-  });
-
-  // Runs BEFORE EACH test in this describe block (e.g., auth, navigation)
+test.describe('Forms Feature', () => {
+  // 2. Suite-specific hook: Opens the Forms navigation menu
   test.beforeEach(async ({ page }) => {
-    await page.goto('https://example.com');
+    await page.getByText('Forms').click();
   });
 
-  // Runs AFTER EACH test (e.g., state cleanup, logging)
-  test.afterEach(async ({ page }) => {
-    console.log(`Finished test on: ${page.url()}`);
+  test('navigate to Form Layouts', async ({ page }) => {
+    await page.getByText('Form Layouts').click();
+    await expect(page).toHaveURL(/form-layouts/);
   });
 
-  // Runs ONCE after all tests in this describe block complete
-  test.afterAll(async () => {
-    console.log('--- Completed Cart Suite ---');
+  test('navigate to Datepicker', async ({ page }) => {
+    await page.getByText('Datepicker').click();
+    await expect(page).toHaveURL(/datepicker/);
+  });
+});
+
+test.describe('Charts Feature', () => {
+  // 2. Suite-specific hook: Opens the Charts navigation menu
+  test.beforeEach(async ({ page }) => {
+    await page.getByText('Charts').click();
   });
 
-  test('add item to cart', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add to Cart' }).click();
-    await expect(page.locator('.cart-badge')).toHaveText('1');
-  });
-
-  test('remove item from cart', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add to Cart' }).click();
-    await page.getByRole('button', { name: 'Remove' }).click();
-    await expect(page.locator('.cart-badge')).toBeHidden();
+  test('navigate to Echarts', async ({ page }) => {
+    await page.getByText('Echarts').click();
+    await expect(page).toHaveURL(/echarts/);
   });
 });
 ```

@@ -6,6 +6,23 @@ import { test } from '@playwright/test';
  *  - beforeEach()
  *  - afterEach()
  *  - afterAll()
+ * 
+ * [Suite / File Start]
+   │
+   ▼
+    test.beforeAll()       ──> (Runs once)
+   │
+   ├──▶ test.beforeEach()  ──> Fresh browser context & page created
+   │    test('Test 1')
+   │    test.afterEach()   ──> Page destroyed
+   │
+   ├──▶ test.beforeEach()  ──> Brand-new browser context & page created
+   │    test('Test 2')
+   │    test.afterEach()   ──> Page destroyed
+   │
+   ▼
+    test.afterAll()        ──> (Runs once)
+[Suite / File End]
 */
 
 //This steps run before each test in both suites
@@ -34,7 +51,8 @@ test.describe('This suite A', () => {
 test.describe('This suite B', () => {
     //This steps run before each test in suite B
     test.beforeEach('Hooks steps before each test', async ({ page }) => {
-        await page.getByText('Charts').first().click()
+        //The 'exact' option match the text exactly
+        await page.getByTitle('Charts', {exact:true}).click();
     }
     )
 

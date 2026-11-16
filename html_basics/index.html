@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Fundamentals: Tags, Attributes & Classes</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --primary: #3b82f6;
+      --success: #10b981;
+      --danger: #ef4444;
+      --code-bg: #0f172a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #0f172a;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .card-title {
+      margin-top: 0;
+      color: #334155;
+    }
+
+    /* Anatomy breakdown */
+    .anatomy-box {
+      background: var(--code-bg);
+      color: #f1f5f9;
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 1.05rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    .tag { color: #f43f5e; font-weight: bold; }
+    .attr-name { color: #38bdf8; }
+    .attr-val { color: #a3e635; }
+    .content { color: #f8fafc; }
+
+    /* Interactive button demo */
+    .interactive-demo {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    button.control-btn {
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    button.control-btn:hover {
+      background: #cbd5e1;
+    }
+
+    /* Target demo element with multiple classes */
+    #demo-button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      border: 2px solid transparent;
+      outline: none;
+      width: fit-content;
+    }
+
+    /* Class values */
+    .btn              { background-color: #64748b; color: white; border-color: #475569; }
+    .btn-primary      { background-color: #2563eb; color: white; border-color: #1d4ed8; }
+    .btn-success      { background-color: #059669; color: white; border-color: #047857; }
+    .btn-danger       { background-color: #dc2626; color: white; border-color: #b91c1c; }
+    .btn-large        { padding: 1.1rem 2.2rem; font-size: 1.25rem; }
+    .is-active        { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5); transform: scale(1.03); }
+    .is-loading       { opacity: 0.6; cursor: wait !important; }
+
+    .inspector {
+      background: #f1f5f9;
+      border-left: 4px solid var(--primary);
+      padding: 0.75rem 1rem;
+      font-family: monospace;
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    code {
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>HTML Fundamentals: Tags, Attributes & Classes</h1>
+
+    <!-- 1. Anatomy Section -->
+    <div class="card">
+      <h2 class="card-title">1. Anatomy of an HTML Element</h2>
+      <p>An HTML element is made of an <strong>opening tag</strong>, optional <strong>attributes</strong> (name-value pairs), the <strong>content</strong>, and a <strong>closing tag</strong>:</p>
+
+      <div class="anatomy-box">
+        &lt;<span class="tag">button</span> <span class="attr-name">id</span>=<span class="attr-val">"submit-btn"</span> <span class="attr-name">class</span>=<span class="attr-val">"btn btn-primary"</span> <span class="attr-name">type</span>=<span class="attr-val">"submit"</span>&gt;<span class="content">Submit Order</span>&lt;/<span class="tag">button</span>&gt;
+      </div>
+
+      <ul>
+        <li><strong>Tag Name:</strong> <code>button</code> &mdash; Specifies what type of element this is.</li>
+        <li><strong>Attribute Name:</strong> <code>id</code>, <code>class</code>, <code>type</code> &mdash; Extra settings or metadata on the element.</li>
+        <li><strong>Attribute Value:</strong> <code>"submit-btn"</code>, <code>"btn btn-primary"</code>, <code>"submit"</code> &mdash; Always wrapped in quotes.</li>
+        <li><strong>Content:</strong> <code>Submit Order</code> &mdash; The text or inner HTML between opening and closing tags.</li>
+      </ul>
+    </div>
+
+    <!-- 2. id vs class Section -->
+    <div class="card">
+      <h2 class="card-title">2. <code>id</code> vs <code>class</code></h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th><code>id</code> Attribute</th>
+            <th><code>class</code> Attribute</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Uniqueness</strong></td>
+            <td><strong>Must be unique</strong> in the entire document (only 1 element can have <code>id="login-btn"</code>).</td>
+            <td><strong>Can be reused</strong> on dozens or hundreds of elements across the page.</td>
+          </tr>
+          <tr>
+            <td><strong>Number of values</strong></td>
+            <td>Only <strong>one</strong> single word/token (no spaces allowed).</td>
+            <td><strong>Multiple values</strong> allowed, separated by spaces: <code>class="btn btn-primary active"</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>CSS Selector</strong></td>
+            <td><code>#submit-btn</code> (prefixed with <code>#</code>)</td>
+            <td><code>.btn</code> or <code>.btn-primary</code> (prefixed with <code>.</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Playwright Locator</strong></td>
+            <td><code>page.locator('#submit-btn')</code></td>
+            <td><code>page.locator('.btn.btn-primary')</code></td>
+          </tr>
+          <tr>
+            <td><strong>Real-World Analogy</strong></td>
+            <td>Like a Passport number or SSN (identifies one exact person).</td>
+            <td>Like clothing (many people can wear a "blue-shirt" and "sneakers").</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. Interactive Dynamic Class Demo -->
+    <div class="card">
+      <h2 class="card-title">3. Interactive Demo: Multiple & Dynamic Classes</h2>
+      <p>Notice how a single element can hold multiple classes simultaneously, and how JavaScript dynamically adds or removes classes when state changes:</p>
+
+      <div class="interactive-demo">
+        <div class="controls">
+          <button class="control-btn" onclick="toggleClass('btn-primary')">Toggle .btn-primary</button>
+          <button class="control-btn" onclick="toggleClass('btn-success')">Toggle .btn-success</button>
+          <button class="control-btn" onclick="toggleClass('btn-danger')">Toggle .btn-danger</button>
+          <button class="control-btn" onclick="toggleClass('btn-large')">Toggle .btn-large</button>
+          <button class="control-btn" onclick="toggleClass('is-active')">Toggle .is-active</button>
+          <button class="control-btn" onclick="toggleClass('is-loading')">Toggle .is-loading</button>
+        </div>
+
+        <!-- Target Element -->
+        <button id="demo-button" class="btn btn-primary">
+          Dynamic Target Button
+        </button>
+
+        <!-- Live DOM Inspector -->
+        <div class="inspector">
+          <strong>Live DOM representation:</strong><br>
+          <span id="dom-display">&lt;button id="demo-button" class="btn btn-primary"&gt;Dynamic Target Button&lt;/button&gt;</span>
+        </div>
+      </div>
+    </div>
+
+        <!-- 4. Plain Text & DOM Hierarchy (Parent, Children, Siblings) -->
+    <div class="card">
+      <h2 class="card-title">4. Plain Text & DOM Hierarchy (Parent, Children, Siblings)</h2>
+      
+      <h3>A. Plain Text (Text Nodes)</h3>
+      <p>In HTML, text is not an element tag; it is represented in the DOM as a distinct <strong>Text Node</strong>:</p>
+      <div class="anatomy-box">
+        &lt;<span class="tag">div</span> <span class="attr-name">class</span>=<span class="attr-val">"greeting"</span>&gt;<br>
+        &nbsp;&nbsp;Welcome back, &lt;<span class="tag">strong</span>&gt;Alex&lt;/<span class="tag">strong</span>&gt;!<br>
+        &lt;/<span class="tag">div</span>&gt;
+      </div>
+      <p>Inside this single <code>&lt;div&gt;</code>, there are <strong>3 distinct nodes</strong>:
+        <br>1. Text Node: <code>"Welcome back, "</code>
+        <br>2. Element Node: <code>&lt;strong&gt;Alex&lt;/strong&gt;</code> (which wraps its own Text Node: <code>"Alex"</code>)
+        <br>3. Text Node: <code>"!"</code>
+      </p>
+
+      <h3>B. The DOM Family Tree (Parent, Child, Sibling)</h3>
+      <p>Every HTML document is arranged as a hierarchy of nodes:</p>
+      
+      <div class="anatomy-box" style="line-height: 1.8;">
+        ┌── &lt;<span class="tag">div</span> <span class="attr-name">class</span>=<span class="attr-val">"card"</span>&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;◀── <strong>PARENT NODE</strong><br>
+        │&nbsp;&nbsp;&nbsp;├── &lt;<span class="tag">h3</span>&gt;Wireless Mouse&lt;/<span class="tag">h3</span>&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;◀── <strong>CHILD</strong> (Sibling to &lt;p&gt; and &lt;button&gt;)<br>
+        │&nbsp;&nbsp;&nbsp;├── &lt;<span class="tag">p</span>&gt;Ergonomic silent mouse.&lt;/<span class="tag">p</span>&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;◀── <strong>CHILD</strong> (Sibling to &lt;h3&gt; and &lt;button&gt;)<br>
+        │&nbsp;&nbsp;&nbsp;└── &lt;<span class="tag">button</span> <span class="attr-name">class</span>=<span class="attr-val">"buy-btn"</span>&gt;Buy Now&lt;/<span class="tag">button</span>&gt; &nbsp;&nbsp;◀── <strong>CHILD</strong> (Sibling to &lt;h3&gt; and &lt;p&gt;)<br>
+        └── &lt;/<span class="tag">div</span>&gt;
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Relationship</th>
+            <th>Definition</th>
+            <th>Playwright Automation Usage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Parent Node</strong></td>
+            <td>The immediate container element directly enclosing another element.</td>
+            <td><strong>Locator Chaining:</strong> <code>page.locator('.card').getByRole('button')</code> scopes search inside parent.</td>
+          </tr>
+          <tr>
+            <td><strong>Child Node</strong></td>
+            <td>Any element directly nested inside a parent element.</td>
+            <td><strong>Filtering by Child:</strong> <code>page.locator('.card').filter({ hasText: 'Wireless Mouse' })</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Sibling Node</strong></td>
+            <td>Elements that share the <strong>exact same immediate parent</strong>.</td>
+            <td>Finding a sibling relative to another sibling: <code>page.locator('h3 + p')</code> or filtering their parent.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. Modern Frameworks: React, Vue, Angular -->
+    <div class="card">
+      <h2 class="card-title">4. How Frameworks Handle Classes (React, Vue, Angular)</h2>
+      
+      <h3>A. React (JSX) &rarr; <code>className</code></h3>
+      <p>In JavaScript, <code>class</code> is a <strong>reserved keyword</strong> used for creating ES6 classes (e.g. <code>class Car {}</code>). Because JSX is transpiled directly into JavaScript calls (<code>React.createElement</code>), React uses <strong><code>className</code></strong> instead of <code>class</code>:</p>
+      <div class="anatomy-box">
+        // React JSX:<br>
+        &lt;<span class="tag">button</span> <span class="attr-name">className</span>=<span class="attr-val">"btn btn-primary"</span>&gt;Save&lt;/<span class="tag">button</span>&gt;<br><br>
+        // Dynamic in React (Template literals):<br>
+        &lt;<span class="tag">button</span> <span class="attr-name">className</span>={<span class="attr-val">`btn ${isActive ? 'is-active' : ''}`</span>}&gt;Save&lt;/<span class="tag">button</span>&gt;
+      </div>
+
+      <h3>B. Vue.js &rarr; <code>:class</code> / <code>v-bind:class</code></h3>
+      <p>Vue templates allow normal <code>class</code> for static styles, plus <strong><code>:class</code></strong> for dynamic bindings using objects or arrays:</p>
+      <div class="anatomy-box">
+        &lt;!-- Vue template: merges static and dynamic classes automatically --&gt;<br>
+        &lt;<span class="tag">button</span> <span class="attr-name">class</span>=<span class="attr-val">"btn"</span> <span class="attr-name">:class</span>=<span class="attr-val">"{ 'btn-success': isSaved, 'is-loading': isLoading }"</span>&gt;Save&lt;/<span class="tag">button</span>&gt;
+      </div>
+
+      <h3>C. Angular &rarr; <code>[class]</code> / <code>[ngClass]</code></h3>
+      <p>Angular uses square brackets <code>[ ]</code> for property bindings:</p>
+      <div class="anatomy-box">
+        &lt;!-- Angular template: single class toggle or ngClass object --&gt;<br>
+        &lt;<span class="tag">button</span> <span class="attr-name">class</span>=<span class="attr-val">"btn"</span> <span class="attr-name">[class.is-active]</span>=<span class="attr-val">"isActive"</span>&gt;Save&lt;/<span class="tag">button</span>&gt;<br>
+        &lt;<span class="tag">button</span> <span class="attr-name">[ngClass]</span>=<span class="attr-val">"{ 'btn-primary': isPrimary, 'btn-large': isLarge }"</span>&gt;Save&lt;/<span class="tag">button</span>&gt;
+      </div>
+
+      <h3>💡 What does Playwright see?</h3>
+      <p><strong>Playwright only sees the final rendered HTML in the browser DOM!</strong> Regardless of whether a site was written in React, Vue, or Angular, the browser DOM always outputs:</p>
+      <div class="anatomy-box">
+        &lt;<span class="tag">button</span> <span class="attr-name">id</span>=<span class="attr-val">"demo-button"</span> <span class="attr-name">class</span>=<span class="attr-val">"btn btn-primary is-active"</span>&gt;Save&lt;/<span class="tag">button</span>&gt;
+      </div>
+      <p>So in your Playwright tests, you <strong>always</strong> locate by standard classes (e.g. <code>page.locator('.btn.is-active')</code>), never by <code>className</code> or <code>:class</code>.</p>
+    </div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('demo-button');
+    const display = document.getElementById('dom-display');
+
+    function updateDisplay() {
+      display.textContent = `<button id="${btn.id}" class="${btn.className}">Dynamic Target Button</button>`;
+    }
+
+    function toggleClass(className) {
+      btn.classList.toggle(className);
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>
+

@@ -445,6 +445,163 @@ test.describe('Charts Feature', () => {
 
 ## 3. Modern Locator Strategies
 
+### HTML Fundamentals for Automation (Tags, Attributes, `id` & `class`)
+
+Before writing locators in Playwright, you must understand how web pages are structured in the DOM using HTML tags, attributes, and classes.
+
+#### 1. Anatomy of an HTML Element
+
+```html
+<button id="submit-btn" class="btn btn-primary" type="submit">Submit Order</button>
+```
+
+* **Opening & Closing Tags (`<button>` ... `</button>`):** Defines what type of element this is (e.g., `button`, `input`, `div`, `a`, `h1`).
+* **Attribute Name (`id`, `class`, `type`):** Configuration or metadata placed inside the opening tag.
+* **Attribute Value (`"submit-btn"`, `"btn btn-primary"`, `"submit"`):** The specific string assigned to that attribute, always enclosed in quotes.
+* **Element Content (`Submit Order`):** The visible text or nested child elements that sit between the opening and closing tags.
+
+---
+
+#### 2. `id` vs. `class` Attributes
+
+| Feature | `id` Attribute | `class` Attribute |
+| :--- | :--- | :--- |
+| **Uniqueness** | **Must be unique** in the entire HTML document. | **Can be reused** across multiple elements on the page. |
+| **Value Count** | Exactly **one** value (no spaces allowed). | **Multiple values** allowed, separated by spaces. |
+| **CSS Selector** | `#submit-btn` (prefixed with `#`) | `.btn` or `.btn-primary` (prefixed with `.`) |
+| **Playwright Locator** | `page.locator('#submit-btn')` | `page.locator('.btn.btn-primary')` |
+| **Real-World Analogy** | Like a **Passport / National ID**: uniquely identifies one specific person. | Like **clothing / uniforms**: many people can wear a `"blue-shirt"` and `"sneakers"`. |
+
+---
+
+#### 3. How `class` is Dynamic & Holds Multiple Values
+
+##### Multiple Classes (Space-Separated List)
+An element's `class` attribute can hold multiple independent styling and behavioral classes separated by spaces:
+
+```html
+<button class="btn btn-primary btn-large is-active">Save Changes</button>
+```
+This single element has **4 distinct classes**:
+1. `btn` (base button sizing and reset styles)
+2. `btn-primary` (brand color scheme)
+3. `btn-large` (larger padding and font)
+4. `is-active` (active highlight state)
+
+##### Dynamic State Changes in Web Apps
+In modern web applications, JavaScript constantly adds, removes, or toggles classes as the user interacts with the page:
+
+```
+[Normal State]       ──▶ <button class="btn btn-primary">Save</button>
+[User Clicks Save]   ──▶ <button class="btn btn-primary is-loading">Saving...</button>
+[Save Succeeds]      ──▶ <button class="btn btn-success">Saved!</button>
+```
+
+##### 💡 Playwright Best Practice for Classes:
+* **✅ Good (Multi-class selector):**
+  `page.locator('.btn.btn-primary')` checks if the element contains **both** `.btn` and `.btn-primary`, regardless of the order they appear in, and will still match even if dynamic classes like `is-active` or `is-loading` get added.
+* **❌ Brittle (Exact string match):**
+  `page.locator('[class="btn btn-primary"]')` requires an exact character-for-character match of the entire `class` string. If the application dynamically adds `is-active`, this locator will **break and fail to find the element**!
+
+---
+
+#### 4. Plain Text & DOM Hierarchy (Parent, Children, Siblings)
+
+To build reliable locators and master Playwright's filtering methods (`.filter()`, locator chaining), you need to understand how browsers organize HTML elements into a tree structure.
+
+##### A. Plain Text Nodes
+In HTML, raw text is not a tag; it is represented in the DOM as a distinct **Text Node**:
+
+```html
+<div class="user-greeting">
+  Welcome back, <strong>Alex</strong>!
+</div>
+```
+Inside this single `<div>`, there are **3 distinct nodes**:
+1. Text Node: `"Welcome back, "`
+2. Element Node: `<strong>` (which itself wraps a Text Node: `"Alex"`)
+3. Text Node: `"!"`
+
+* **Playwright `getByText()`:** Automatically traverses all text nodes inside an element. Calling `page.getByText('Welcome back, Alex!')` matches the `<div>` even though part of the text is wrapped inside `<strong>`.
+* **Playwright `getByRole()`:** When you use `page.getByRole('button', { name: 'Save' })`, Playwright gathers all text nodes nested anywhere inside the `<button>` to determine its accessible name.
+
+---
+
+##### B. The DOM Family Tree (Parent, Child, Sibling)
+
+Every HTML document is structured like an inverted family tree:
+
+```
+           ┌────────────────────────┐
+           │   <div class="card">   │  ◀─── PARENT NODE
+           └───────────┬────────────┘
+                       │
+     ┌─────────────────┼─────────────────┐
+     ▼                 ▼                 ▼
+┌───────────┐    ┌───────────┐     ┌───────────┐
+│   <h3>    │    │    <p>    │     │ <button>  │  ◀─── SIBLING NODES (all direct children of .card)
+└───────────┘    └───────────┘     └───────────┘
+```
+
+```html
+<div class="card" id="product-1">
+  <h3 class="title">Wireless Mouse</h3>
+  <p class="description">Ergonomic silent mouse.</p>
+  <button class="buy-btn">Buy Now</button>
+</div>
+```
+
+| Relationship | Definition | In the Example Above |
+| :--- | :--- | :--- |
+| **Parent Node** | The immediate container element directly wrapping another element. | `<div class="card">` is the **parent** of `<h3>`, `<p>`, and `<button>`. |
+| **Child Node(s)** | Elements placed directly inside a parent element. | `<h3>`, `<p>`, and `<button>` are direct **children** of `<div class="card">`. |
+| **Sibling Nodes** | Elements that share the **exact same immediate parent**. | `<h3>`, `<p>`, and `<button>` are **siblings** to each other. |
+| **Ancestor / Descendant** | Multi-level relationships (grandparents / grandchildren). | `<body>` is an **ancestor** of `<button>`; `<button>` is a **descendant** of `<body>`. |
+
+---
+
+##### C. Why This Matters for Playwright Test Automation
+
+Understanding DOM tree relationships is essential for solving complex locator problems:
+
+1. **Locator Chaining (Parent $\rightarrow$ Child):**
+   Narrow down your search by scoping inside a parent container first:
+   ```typescript
+   // Locate the card container first, then find the button inside it:
+   const productCard = page.locator('#product-1');
+   await productCard.getByRole('button', { name: 'Buy Now' }).click();
+   ```
+
+2. **Filtering Parents by Child Elements (`.filter({ has: ... })`):**
+   When a page has multiple identical cards (e.g. 10 product cards each with a "Buy Now" button), you filter the parent by its child heading or text:
+   ```typescript
+   // 1. Filter parent by child text:
+   await page.locator('.card')
+     .filter({ hasText: 'Wireless Mouse' })
+     .getByRole('button', { name: 'Buy Now' })
+     .click();
+
+   // 2. Filter parent using a specific child locator:
+   await page.locator('.card')
+     .filter({ has: page.getByRole('heading', { name: 'Wireless Mouse' }) })
+     .getByRole('button', { name: 'Buy Now' })
+     .click();
+   ```
+
+3. **Traversing Up to a Parent (`locator('..')`):**
+   When you locate a unique piece of text and need to interact with or assert on the parent card:
+   ```typescript
+   // Locate unique text, then select its immediate parent:
+   const parentCard = page.getByText('Wireless Mouse').locator('..');
+   await expect(parentCard).toHaveClass(/highlighted/);
+   ```
+
+---
+
+
+
+
+
 Playwright strongly recommends **User-Facing Locators**. These mirror how real users and assistive technology (screen readers) perceive and navigate the page, making your test suite resilient to CSS refactors and DOM restructuring.
 
 ### Locator Priority Guide
@@ -531,28 +688,164 @@ await page.getByRole('row')
 
 ---
 
+### CSS Selector Rules & Combinators
+
+While Playwright strongly favors accessible user-facing locators (`getByRole`, `getByLabel`), mastering CSS selectors is essential when working with legacy apps, custom components, or complex DOM structures.
+
+#### 1. Core CSS Selectors Cheatsheet
+
+| Selector Type | Syntax | Playwright Example | Matches |
+| :--- | :--- | :--- | :--- |
+| **Tag Name** | `tag` | `page.locator('input')` | Elements by HTML tag (`<input>`, `<button>`). |
+| **ID** | `#id` | `page.locator('#inputEmail1')` | Element with `id="inputEmail1"`. |
+| **Class** | `.class` | `page.locator('.shape-rectangle')` | Elements containing the class `shape-rectangle`. |
+| **Attribute** | `[attr="val"]` | `page.locator('[placeholder="Email"]')` | Elements with specific attribute name and value. |
+| **Boolean Attribute** | `[attr]` | `page.locator('[disabled]')` or `page.locator('[nbinput]')` | Elements having the attribute, regardless of its value (common for Angular directives). |
+| **Exact Full Class** | `[class="..."]` | `page.locator('[class="btn btn-primary"]')` | ⚠️ **Brittle:** Requires exact full-string match of all classes in exact order. |
+| **Chained Attributes** | `[attr1][attr2]` | `page.locator('[placeholder="Email"][nbinput]')` | Elements matching **both** attributes simultaneously (logical AND). |
+| **Combined Selector** | `tag[attr].class`| `page.locator('input[placeholder="Email"].shape-rectangle')` | Tag + Attribute + Class combined on the **same single element** (no spaces). |
+
+---
+
+#### 2. CSS Combinators: Spaces vs. No Spaces vs. Commas
+
+Understanding whitespace in CSS is critical:
+
+##### A. No Space = Same Element (AND)
+When selector parts touch without spaces, every condition must be true on the **exact same element**:
+```typescript
+// Matches an <input> that has class .shape-rectangle:
+page.locator('input.shape-rectangle')
+```
+
+##### B. Space = Descendant (Parent $\rightarrow$ Child / Inside)
+A space tells the browser: *"Find the right-hand element **inside** the left-hand element (child, grandchild, etc.)"*:
+```typescript
+// Matches any <button> located anywhere INSIDE an <nb-card>:
+page.locator('nb-card button')
+
+// Matches an element with .shape-rectangle INSIDE an <input>:
+page.locator('input .shape-rectangle')
+```
+
+| Syntax | Has Space? | Meaning | Target Element |
+| :--- | :---: | :--- | :--- |
+| `input.shape` | ❌ No | **Same element**: An `<input>` that *itself* has class `.shape`. | The `<input>` |
+| `input .shape` | ✅ Yes | **Descendant**: An element with `.shape` located *inside* `<input>`. | The child element |
+
+##### C. Direct Child (`>`)
+Unlike space (which searches any depth), `>` searches only **immediate children**:
+```typescript
+// Button must be a direct child of .card-body (not inside a deeper wrapper):
+page.locator('.card-body > button')
+```
+
+##### D. Comma (`,`) = OR / Union Selector
+A comma acts as a logical **OR** (matches element A **or** element B):
+```typescript
+// Matches either #btn-accept OR #btn-agree:
+page.locator('#btn-accept, #btn-agree')
+```
+
+> ⚠️ **Strict Mode Gotcha with Commas:**
+> If **both** `#btn-accept` and `#btn-agree` exist on the page simultaneously, calling `.click()` will throw a **Strict Mode Violation**.
+> Use comma selectors for actions primarily when **only one of the two options appears at a time** (e.g. A/B testing variants or cookie consent dialogs).
+
+##### Modern Playwright Alternative for OR: `.or()`
+Playwright provides a built-in `.or()` method that works with user-facing locators:
+```typescript
+const acceptBtn = page.getByRole('button', { name: 'Accept' });
+const agreeBtn = page.getByRole('button', { name: 'I Agree' });
+
+// Click whichever button is present:
+await acceptBtn.or(agreeBtn).click();
+```
+
+---
+
+#### 3. Playwright CSS Text Pseudo-Classes & XPath
+
+Playwright extends standard CSS with custom pseudo-classes:
+
+* **`:text("...")` (Partial match):**
+  Matches elements containing substring text:
+  ```typescript
+  page.locator(':text("Using")') // Matches "Using the Grid"
+  ```
+* **`:text-is("...")` (Exact match):**
+  Matches elements whose complete inner text matches exactly:
+  ```typescript
+  page.locator(':text-is("Using the Grid")')
+  ```
+  *(Modern Playwright recommendation: Prefer `page.getByText('Using the Grid', { exact: true })` over CSS pseudo-classes).*
+
+* **XPath Selectors (`//`):**
+  Playwright supports XPath by prefixing with `//` or `xpath=`:
+  ```typescript
+  page.locator('//*[@id="inputEmail1"]')
+  ```
+  *(⚠️ **Not Recommended:** XPath is brittle, hard to read, and tightly coupled to DOM structure. Always prefer user-facing locators or clean CSS).*
+
+---
+
 ### Strict Mode & Handling Multiple Elements
 
-By default, Playwright operates in **Strict Mode**. If a locator resolves to **more than one** element when an action is executed, Playwright throws an error:
-`Error: strict mode violation: locator('button') resolved to 5 elements`
+By default, Playwright enforces **Strict Mode**. If a locator resolves to **more than one** element when you trigger an action (`click()`, `fill()`, `check()`), Playwright halts execution and throws an error:
 
-#### How to resolve multiple elements:
+```
+Error: strict mode violation: getByText('Charts') resolved to 2 elements
+```
+
+---
+
+#### Why `.first()` is Often a Code Smell (Anti-Pattern)
+
+When faced with a strict mode error, beginners often append `.first()`:
 ```typescript
-const items = page.getByRole('listitem');
+// ⚠️ Brittle workaround:
+await page.getByText('Charts').first().click();
+```
 
-// 1. Pick by index
-await items.first().click();
-await items.last().click();
-await items.nth(2).click(); // 0-based index (3rd item)
+* **Why it is brittle:** `.first()` relies blindly on accidental DOM order. If a new banner, navigation item, or widget is added above the element in a future release, `.first()` will silently click the wrong element or cause confusing test flakes.
 
-// 2. Count elements
-const count = await items.count();
+---
 
-// 3. Iterate over all elements
-for (const item of await items.all()) {
-  console.log(await item.textContent());
+#### The 5 Proper Ways to Resolve Multiple Elements
+
+Instead of `.first()`, use one of these reliable strategies to uniquely identify your target:
+
+| Strategy | When to Use | Playwright Example |
+| :--- | :--- | :--- |
+| **1. Exact Text Matching** | When default substring matching catches partial words (e.g., `"Charts"` matching `"Charts"` and `"Echarts"`). | `page.getByText('Charts', { exact: true })` |
+| **2. Accessible Role** | When text exists inside a container or paragraph, but you want the interactive element. | `page.getByRole('link', { name: 'Charts', exact: true })` |
+| **3. Dedicated Attributes** | When elements have unique attributes (`title`, `data-testid`, `name`). | `page.getByTitle('Charts')`<br>`page.getByTestId('submit-btn')` |
+| **4. Container Scoping (Chaining)** | When identical elements exist in different page sections (e.g., Header vs. Footer). | `page.locator('nb-sidebar').getByText('Charts', { exact: true })` |
+| **5. Parent Filtering (`.filter()`)** | When multiple identical cards/rows exist, and you need to filter by a child's content. | `page.locator('.card').filter({ hasText: 'Product 1' }).getByRole('button')` |
+
+---
+
+#### When Index Picking IS Legitimate
+
+Using indices (`.first()`, `.last()`, `.nth()`) is appropriate when interacting with **inherently ordered collections** (such as search result tables, feed items, or lists):
+
+```typescript
+const tableRows = page.getByRole('row');
+
+// 1. Pick by position in an ordered table:
+await tableRows.first().click();
+await tableRows.last().click();
+await tableRows.nth(2).click(); // 0-based index (3rd row)
+
+// 2. Count total matches:
+const rowCount = await tableRows.count();
+expect(rowCount).toBeGreaterThan(0);
+
+// 3. Iterate through every item in a list:
+for (const row of await tableRows.all()) {
+  console.log(await row.textContent());
 }
 ```
+
 
 ---
 

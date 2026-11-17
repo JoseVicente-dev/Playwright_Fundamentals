@@ -1,3 +1,29 @@
+<!--
+================================================================================
+AI AGENT DIRECTIVE: TOKEN-EFFICIENT EDITING & TOPIC MAP
+================================================================================
+DO NOT READ THIS ENTIRE FILE. It is 1,000+ lines. Use targeted read_file calls:
+
+1. TOPIC MAP & ESTIMATED REGIONS:
+   - TOC        (~L30-L55)   : Table of Contents & jump links.
+   - Section 1  (~L60-L200)  : Setup, npm vs npx install, global cache, VS Code extension, Browser/Context/Page.
+   - Section 2  (~L200-L365) : Test structure, { page } fixture & destructuring, lifecycle hooks, annotations.
+   - Section 3  (~L365-L480) : Modern Locators (getByRole, getByLabel, etc.), chaining, filtering, strict mode.
+   - Section 4  (~L480-L575) : Actions (click, fill vs pressSequentially), auto-waiting & actionability checks.
+   - Section 5  (~L575-L630) : Web-First Assertions (auto-retrying vs generic Jest assertions), cheatsheet.
+   - Section 6  (~L630-L660) : Async mechanics & The 'await' Golden Rule.
+   - Section 7  (~L660-L750) : Complex Scenarios (iFrames, multiple tabs/popups, dialogs, network mocking).
+   - Section 8  (~L750-L840) : Page Object Model (POM) pattern, class implementation & test specs.
+   - Section 9  (~L840-L1030): CLI commands, UI mode, Inspector, Trace Viewer, Codegen, page.pause().
+   - Section 10 (~L1030-End) : playwright.config.ts options, parallelism, timeouts, best practices.
+
+2. PROTOCOL FOR ADDING CONTENT:
+   - To modify/append to an existing section: Use read_file with StartLine/EndLine targeting ONLY that section (~50-100 lines), then use edit_file with a unique target string.
+   - To add a new top-level section: Append or insert at the appropriate boundary, and remember to update the Table of Contents.
+   - Formatting style: English language, GitHub Markdown, tables for comparisons, TypeScript code snippets with inline comments, callout alerts (> 💡, > ⚠️).
+================================================================================
+-->
+
 # Playwright Test Automation Study Guide
 
 A comprehensive reference covering core Playwright architecture, modern locator strategies, auto-waiting mechanics, web-first assertions, Page Object Model (POM), and advanced testing workflows.
@@ -5,7 +31,7 @@ A comprehensive reference covering core Playwright architecture, modern locator 
 ---
 
 ## Table of Contents
-1. [Playwright Architecture & Core Mental Model](#1-playwright-architecture--core-mental-model)
+1. [Setup, Installation & Core Architecture](#1-setup-installation--core-architecture)
 2. [Anatomy of a Playwright Test & Lifecycle Hooks](#2-anatomy-of-a-playwright-test--lifecycle-hooks)
 3. [Modern Locator Strategies (User-Facing vs. Technical)](#3-modern-locator-strategies)
 4. [Actions & Auto-Waiting Mechanics](#4-actions--auto-waiting-mechanics)
@@ -18,7 +44,82 @@ A comprehensive reference covering core Playwright architecture, modern locator 
 
 ---
 
-## 1. Playwright Architecture & Core Mental Model
+## 1. Setup, Installation & Core Architecture
+
+### Package Installation (`npm install`) vs. Browser Binaries (`playwright install`)
+
+Setting up Playwright involves two distinct installation layers:
+
+```
++-------------------------------------------------------------------------+
+| Layer 1: Node Packages (Local to project: ./node_modules)              |
+|          Command: npm install (or npm i)                                |
+|          Installs: @playwright/test runner, test APIs, TypeScript types |
++-------------------------------------------------------------------------+
+                                    │
+                                    ▼
++-------------------------------------------------------------------------+
+| Layer 2: Dedicated Browser Binaries (Global OS Cache)                  |
+|          Command: npx playwright install                                |
+|          Downloads: Headless-ready Chromium, Firefox, WebKit            |
+|          Location (Windows): %LOCALAPPDATA%\ms-playwright               |
++-------------------------------------------------------------------------+
+```
+
+#### 1. Node Packages (`npm install`)
+* Reads `package.json` and downloads `@playwright/test` into your local `node_modules/` folder.
+* Generates/updates `package-lock.json` to lock dependency versions.
+* **Run whenever:** You clone a project, pull dependency changes, or start a new repository.
+
+#### 2. Browser Binaries (`npx playwright install`)
+* Downloads dedicated browser binaries for **Chromium**, **Firefox**, and **WebKit**.
+* Stored **globally on your operating system**, outside your project folder:
+  * **Windows:** `C:\Users\<User>\AppData\Local\ms-playwright`
+  * **macOS:** `~/Library/Caches/ms-playwright`
+  * **Linux:** `~/.cache/ms-playwright`
+
+---
+
+### Why Doesn't Playwright Use Your Personal Desktop Browsers?
+
+Even if Google Chrome, Edge, or Firefox are already installed on your PC, Playwright relies on its own dedicated binaries:
+
+1. **Clean, Deterministic Environment (No "Dirty" Profiles):**
+   * Personal desktop browsers contain extensions, ad-blockers, history, saved cookies, and cached authentication that cause automated tests to fail unpredictably.
+   * Playwright browsers launch with a 100% clean, fresh profile every single time.
+2. **Apple Safari (WebKit) on Windows & Linux:**
+   * Apple does not build Safari for Windows. Playwright bundles an open-source, compiled build of **WebKit** for Windows, allowing you to test Safari rendering and behaviors without needing a Mac.
+3. **Controlled & Patched Automation Builds:**
+   * Automatic background updates to desktop Chrome can silently break test automation. Playwright pins exact, heavily-tested builds optimized for high-speed bi-directional WebSocket communication.
+
+---
+
+### Global Browser Caching: Do You Need to Install Browsers Every Time?
+
+**No.** Because Playwright stores browser binaries in a global cache (`%LOCALAPPDATA%\ms-playwright`):
+* **Reused Across Projects:** If you already ran `npx playwright install` for a given Playwright version on your PC, any other project using that version will automatically reuse those exact same browsers.
+* **When you actually need to run `npx playwright install`:**
+  1. On a brand-new computer that has never run Playwright before.
+  2. Inside CI/CD runners (GitHub Actions, GitLab CI, Jenkins).
+  3. When you upgrade `@playwright/test` to a newer version that requires updated browser builds.
+
+---
+
+### Recommended IDE Setup: "Playwright Test for VSCode" Extension
+
+If you are developing in **VS Code** or **Google Antigravity IDE** (which is built on the VS Code architecture), it is strongly recommended to install the official Microsoft extension:
+
+* **Extension Name:** **Playwright Test for VSCode** (Extension ID: `ms-playwright.playwright`)
+* **How to install:** Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>, search for `Playwright Test for VSCode`, and click **Install**.
+
+#### Key Features Provided by the Extension:
+1. **One-Click Run & Debug:** Adds clickable green "Play" buttons directly in the editor gutter next to every `test()` and `test.describe()` block.
+2. **Interactive Breakpoints:** Click next to line numbers to set breakpoints. Run tests in debug mode to inspect variables and DOM state mid-test.
+3. **Dedicated Testing Sidebar:** Adds a flask icon (Testing view) showing your complete test hierarchy with live pass/fail badges.
+4. **"Show Browser" Mode:** Toggle "Show Browser" in the testing panel to see tests execute headed in real time during development.
+5. **"Record at Cursor" & "Pick Locator":** Click "Record at cursor" to interact with a page and have Playwright write the code into your file automatically.
+
+---
 
 ### Why Playwright is Different
 Traditional automation tools (like Selenium WebDriver) operate via HTTP commands through intermediary executable drivers (e.g., `chromedriver.exe`). Playwright directly drives browsers over a **single bi-directional WebSocket connection** via native browser debugging protocols (Chrome DevTools Protocol for Chromium, and equivalent internal protocols for Firefox and WebKit).
@@ -116,42 +217,211 @@ Playwright passes pre-configured test fixtures into your test function via objec
 
 ---
 
+### Why is `page` Passed as `{ page }`? (JavaScript Object Destructuring & Fixtures)
+
+A common question when writing your first Playwright test is why the callback argument is enclosed in curly braces `{ page }` instead of a plain parameter `page`:
+
+```typescript
+// ❌ WRONG (treating fixtures as a single positional parameter):
+test('invalid parameter syntax', async (page) => {
+  // 'page' is NOT the Page object here! It is the entire fixtures object: { page, context, browser, ... }
+  // Calling page.goto(...) will result in a TypeError!
+});
+
+// ✅ CORRECT (using ES6 object destructuring):
+test('valid parameter syntax', async ({ page }) => {
+  await page.goto('https://example.com');
+});
+```
+
+This syntax is governed by two core concepts: **ES6 Object Destructuring** and **Playwright Fixtures**.
+
+#### 1. Under the Hood: A Single Fixtures Object
+Playwright's test runner does not pass individual positional arguments to your callback function. Instead, it passes a **single container object** holding all available testing resources (called *Fixtures*):
+
+```javascript
+// What Playwright internally delivers to your test callback:
+{
+  page: [Page Object],
+  context: [BrowserContext Object],
+  browser: [Browser Object],
+  browserName: 'chromium',
+  request: [APIRequestContext Object],
+  // ...other configured fixtures
+}
+```
+
+* **Without destructuring (traditional syntax):** You would have to accept the whole object and access `.page` repeatedly:
+  ```typescript
+  test('without destructuring', async (fixtures) => {
+    await fixtures.page.goto('https://example.com');
+    console.log(fixtures.browserName);
+  });
+  ```
+* **With destructuring (`{ page }`):** JavaScript extracts the `page` property directly into a standalone local variable, keeping your test code concise and clean:
+  ```typescript
+  test('with destructuring', async ({ page }) => {
+    await page.goto('https://example.com');
+  });
+  ```
+
+#### 2. Key Architectural Benefits
+
+##### A. Order Independence & Selective Usage
+Unlike standard positional parameters (`function(a, b, c)`) where you must pass placeholder arguments or follow a strict order, object destructuring allows you to request only what you need, in any order:
+
+```typescript
+// Only need to run API calls (no browser opened):
+test('test api endpoint', async ({ request }) => { ... });
+
+// Need both page and the current browser's name:
+test('cross-browser check', async ({ page, browserName }) => { ... });
+
+// Need raw browser access to spin up multiple contexts:
+test('multi-user session', async ({ browser }) => { ... });
+```
+
+##### B. On-Demand / Lazy Fixture Initialization
+Playwright statically inspects the parameter list of your test function before running it:
+* If you **omit** `{ page }` (e.g., when you only ask for `{ request }`), Playwright **never spins up a browser window or tab**, saving significant CPU, memory, and execution time.
+* Playwright only prepares and initializes the exact fixtures you explicitly declared inside `{ ... }`.
+
+---
+
 ### Test Lifecycle Hooks
+
+Hooks are lifecycle methods that allow you to set up preconditions and clean up state without duplicating code across individual tests.
+
+#### The 4 Core Hooks
+
+| Hook | When It Runs | Common Use Cases | Access to `{ page }`? |
+| :--- | :--- | :--- | :---: |
+| **`test.beforeAll()`** | **Once** before any test runs in its scope | Global test data setup, seeding databases, generating auth tokens via API. | ❌ No (no page exists yet; can access `{ browser }`) |
+| **`test.beforeEach()`** | **Before every single test** in its scope | Navigating (`page.goto`), logging in, setting up UI preconditions. | ✅ Yes (receives fresh isolated `{ page }`) |
+| **`test.afterEach()`** | **After every single test** in its scope | Capturing failure screenshots, resetting UI state, logging test duration. | ✅ Yes |
+| **`test.afterAll()`** | **Once** after all tests finish in its scope | Deleting test records from DB, closing shared connections, cleanup. | ❌ No |
+
+---
+
+#### Lifecycle Execution Order
+
+```
+[File / Suite Initialization]
+       │
+       ▼
+test.beforeAll()           ──▶ Runs ONCE before any test
+       │
+       ├─▶ test.beforeEach()   ──▶ Brand-new BrowserContext & Page initialized
+       │   test('Test 1')      ──▶ Executes test steps
+       │   test.afterEach()    ──▶ Teardown; context & page destroyed
+       │
+       ├─▶ test.beforeEach()   ──▶ Brand-new BrowserContext & Page initialized (100% clean isolation)
+       │   test('Test 2')      ──▶ Executes test steps
+       │   test.afterEach()    ──▶ Teardown; context & page destroyed
+       │
+       ▼
+test.afterAll()            ──▶ Runs ONCE after all tests complete
+[File / Suite Complete]
+```
+
+---
+
+#### Hook Scopes: Root-Level vs. Describe-Level
+
+Hooks respect block-level lexical scope:
+
+1. **Root-Level Hook (File Scope):**
+   Placed outside of any `test.describe()` block. It executes before/after **every single test** in the entire file, across all suites:
+   ```typescript
+   import { test, expect } from '@playwright/test';
+
+   // 🌐 Root hook: Runs before EVERY test in Suite A AND Suite B
+   test.beforeEach(async ({ page }) => {
+     await page.goto('https://playground.bondaracademy.com');
+   });
+
+   test.describe('Suite A', () => { ... });
+   test.describe('Suite B', () => { ... });
+   ```
+
+2. **Describe-Level Hook (Group Scope):**
+   Placed inside a `test.describe()` block. It executes **only** for tests defined inside that specific group:
+   ```typescript
+   test.describe('Forms Suite', () => {
+     // Runs only for tests inside 'Forms Suite'
+     test.beforeEach(async ({ page }) => {
+       await page.getByText('Forms').click();
+     });
+
+     test('Form Layouts', async ({ page }) => { ... });
+   });
+   ```
+
+3. **Nested Scope Execution Order:**
+   When you nest describe blocks, parent hooks always execute first:
+   ```
+   Outer test.beforeEach() ──▶ Inner test.beforeEach() ──▶ Test ──▶ Inner test.afterEach() ──▶ Outer test.afterEach()
+   ```
+
+---
+
+#### Hook Signatures & Optional Titles
+
+Playwright supports two signatures for all hooks:
+* **Anonymous Hook:** `test.beforeEach(hookFunction)`
+* **Named Hook (with Title):** `test.beforeEach(title, hookFunction)`
+
+```typescript
+// 1. Anonymous (Standard & most common):
+test.beforeEach(async ({ page }) => {
+  await page.goto('/login');
+});
+
+// 2. Named with a Title (Labels the hook step in HTML reports and Trace Viewer):
+test.beforeEach('Navigate to application and expand navigation menu', async ({ page }) => {
+  await page.goto('https://playground.bondaracademy.com');
+  await page.getByText('Forms').click();
+});
+```
+
+---
+
+#### Complete Multi-Suite Example
 
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test.describe('Shopping Cart Feature', () => {
+// 1. Root-level hook: Shared starting point for all suites
+test.beforeEach(async ({ page }) => {
+  await page.goto('https://playground.bondaracademy.com');
+});
 
-  // Runs ONCE before all tests in this describe block (e.g., database seed, test setup)
-  test.beforeAll(async () => {
-    console.log('--- Starting Cart Suite ---');
-  });
-
-  // Runs BEFORE EACH test in this describe block (e.g., auth, navigation)
+test.describe('Forms Feature', () => {
+  // 2. Suite-specific hook: Opens the Forms navigation menu
   test.beforeEach(async ({ page }) => {
-    await page.goto('https://example.com');
+    await page.getByText('Forms').click();
   });
 
-  // Runs AFTER EACH test (e.g., state cleanup, logging)
-  test.afterEach(async ({ page }) => {
-    console.log(`Finished test on: ${page.url()}`);
+  test('navigate to Form Layouts', async ({ page }) => {
+    await page.getByText('Form Layouts').click();
+    await expect(page).toHaveURL(/form-layouts/);
   });
 
-  // Runs ONCE after all tests in this describe block complete
-  test.afterAll(async () => {
-    console.log('--- Completed Cart Suite ---');
+  test('navigate to Datepicker', async ({ page }) => {
+    await page.getByText('Datepicker').click();
+    await expect(page).toHaveURL(/datepicker/);
+  });
+});
+
+test.describe('Charts Feature', () => {
+  // 2. Suite-specific hook: Opens the Charts navigation menu
+  test.beforeEach(async ({ page }) => {
+    await page.getByText('Charts').click();
   });
 
-  test('add item to cart', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add to Cart' }).click();
-    await expect(page.locator('.cart-badge')).toHaveText('1');
-  });
-
-  test('remove item from cart', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add to Cart' }).click();
-    await page.getByRole('button', { name: 'Remove' }).click();
-    await expect(page.locator('.cart-badge')).toBeHidden();
+  test('navigate to Echarts', async ({ page }) => {
+    await page.getByText('Echarts').click();
+    await expect(page).toHaveURL(/echarts/);
   });
 });
 ```
@@ -174,6 +444,163 @@ test.describe('Shopping Cart Feature', () => {
 ---
 
 ## 3. Modern Locator Strategies
+
+### HTML Fundamentals for Automation (Tags, Attributes, `id` & `class`)
+
+Before writing locators in Playwright, you must understand how web pages are structured in the DOM using HTML tags, attributes, and classes.
+
+#### 1. Anatomy of an HTML Element
+
+```html
+<button id="submit-btn" class="btn btn-primary" type="submit">Submit Order</button>
+```
+
+* **Opening & Closing Tags (`<button>` ... `</button>`):** Defines what type of element this is (e.g., `button`, `input`, `div`, `a`, `h1`).
+* **Attribute Name (`id`, `class`, `type`):** Configuration or metadata placed inside the opening tag.
+* **Attribute Value (`"submit-btn"`, `"btn btn-primary"`, `"submit"`):** The specific string assigned to that attribute, always enclosed in quotes.
+* **Element Content (`Submit Order`):** The visible text or nested child elements that sit between the opening and closing tags.
+
+---
+
+#### 2. `id` vs. `class` Attributes
+
+| Feature | `id` Attribute | `class` Attribute |
+| :--- | :--- | :--- |
+| **Uniqueness** | **Must be unique** in the entire HTML document. | **Can be reused** across multiple elements on the page. |
+| **Value Count** | Exactly **one** value (no spaces allowed). | **Multiple values** allowed, separated by spaces. |
+| **CSS Selector** | `#submit-btn` (prefixed with `#`) | `.btn` or `.btn-primary` (prefixed with `.`) |
+| **Playwright Locator** | `page.locator('#submit-btn')` | `page.locator('.btn.btn-primary')` |
+| **Real-World Analogy** | Like a **Passport / National ID**: uniquely identifies one specific person. | Like **clothing / uniforms**: many people can wear a `"blue-shirt"` and `"sneakers"`. |
+
+---
+
+#### 3. How `class` is Dynamic & Holds Multiple Values
+
+##### Multiple Classes (Space-Separated List)
+An element's `class` attribute can hold multiple independent styling and behavioral classes separated by spaces:
+
+```html
+<button class="btn btn-primary btn-large is-active">Save Changes</button>
+```
+This single element has **4 distinct classes**:
+1. `btn` (base button sizing and reset styles)
+2. `btn-primary` (brand color scheme)
+3. `btn-large` (larger padding and font)
+4. `is-active` (active highlight state)
+
+##### Dynamic State Changes in Web Apps
+In modern web applications, JavaScript constantly adds, removes, or toggles classes as the user interacts with the page:
+
+```
+[Normal State]       ──▶ <button class="btn btn-primary">Save</button>
+[User Clicks Save]   ──▶ <button class="btn btn-primary is-loading">Saving...</button>
+[Save Succeeds]      ──▶ <button class="btn btn-success">Saved!</button>
+```
+
+##### 💡 Playwright Best Practice for Classes:
+* **✅ Good (Multi-class selector):**
+  `page.locator('.btn.btn-primary')` checks if the element contains **both** `.btn` and `.btn-primary`, regardless of the order they appear in, and will still match even if dynamic classes like `is-active` or `is-loading` get added.
+* **❌ Brittle (Exact string match):**
+  `page.locator('[class="btn btn-primary"]')` requires an exact character-for-character match of the entire `class` string. If the application dynamically adds `is-active`, this locator will **break and fail to find the element**!
+
+---
+
+#### 4. Plain Text & DOM Hierarchy (Parent, Children, Siblings)
+
+To build reliable locators and master Playwright's filtering methods (`.filter()`, locator chaining), you need to understand how browsers organize HTML elements into a tree structure.
+
+##### A. Plain Text Nodes
+In HTML, raw text is not a tag; it is represented in the DOM as a distinct **Text Node**:
+
+```html
+<div class="user-greeting">
+  Welcome back, <strong>Alex</strong>!
+</div>
+```
+Inside this single `<div>`, there are **3 distinct nodes**:
+1. Text Node: `"Welcome back, "`
+2. Element Node: `<strong>` (which itself wraps a Text Node: `"Alex"`)
+3. Text Node: `"!"`
+
+* **Playwright `getByText()`:** Automatically traverses all text nodes inside an element. Calling `page.getByText('Welcome back, Alex!')` matches the `<div>` even though part of the text is wrapped inside `<strong>`.
+* **Playwright `getByRole()`:** When you use `page.getByRole('button', { name: 'Save' })`, Playwright gathers all text nodes nested anywhere inside the `<button>` to determine its accessible name.
+
+---
+
+##### B. The DOM Family Tree (Parent, Child, Sibling)
+
+Every HTML document is structured like an inverted family tree:
+
+```
+           ┌────────────────────────┐
+           │   <div class="card">   │  ◀─── PARENT NODE
+           └───────────┬────────────┘
+                       │
+     ┌─────────────────┼─────────────────┐
+     ▼                 ▼                 ▼
+┌───────────┐    ┌───────────┐     ┌───────────┐
+│   <h3>    │    │    <p>    │     │ <button>  │  ◀─── SIBLING NODES (all direct children of .card)
+└───────────┘    └───────────┘     └───────────┘
+```
+
+```html
+<div class="card" id="product-1">
+  <h3 class="title">Wireless Mouse</h3>
+  <p class="description">Ergonomic silent mouse.</p>
+  <button class="buy-btn">Buy Now</button>
+</div>
+```
+
+| Relationship | Definition | In the Example Above |
+| :--- | :--- | :--- |
+| **Parent Node** | The immediate container element directly wrapping another element. | `<div class="card">` is the **parent** of `<h3>`, `<p>`, and `<button>`. |
+| **Child Node(s)** | Elements placed directly inside a parent element. | `<h3>`, `<p>`, and `<button>` are direct **children** of `<div class="card">`. |
+| **Sibling Nodes** | Elements that share the **exact same immediate parent**. | `<h3>`, `<p>`, and `<button>` are **siblings** to each other. |
+| **Ancestor / Descendant** | Multi-level relationships (grandparents / grandchildren). | `<body>` is an **ancestor** of `<button>`; `<button>` is a **descendant** of `<body>`. |
+
+---
+
+##### C. Why This Matters for Playwright Test Automation
+
+Understanding DOM tree relationships is essential for solving complex locator problems:
+
+1. **Locator Chaining (Parent $\rightarrow$ Child):**
+   Narrow down your search by scoping inside a parent container first:
+   ```typescript
+   // Locate the card container first, then find the button inside it:
+   const productCard = page.locator('#product-1');
+   await productCard.getByRole('button', { name: 'Buy Now' }).click();
+   ```
+
+2. **Filtering Parents by Child Elements (`.filter({ has: ... })`):**
+   When a page has multiple identical cards (e.g. 10 product cards each with a "Buy Now" button), you filter the parent by its child heading or text:
+   ```typescript
+   // 1. Filter parent by child text:
+   await page.locator('.card')
+     .filter({ hasText: 'Wireless Mouse' })
+     .getByRole('button', { name: 'Buy Now' })
+     .click();
+
+   // 2. Filter parent using a specific child locator:
+   await page.locator('.card')
+     .filter({ has: page.getByRole('heading', { name: 'Wireless Mouse' }) })
+     .getByRole('button', { name: 'Buy Now' })
+     .click();
+   ```
+
+3. **Traversing Up to a Parent (`locator('..')`):**
+   When you locate a unique piece of text and need to interact with or assert on the parent card:
+   ```typescript
+   // Locate unique text, then select its immediate parent:
+   const parentCard = page.getByText('Wireless Mouse').locator('..');
+   await expect(parentCard).toHaveClass(/highlighted/);
+   ```
+
+---
+
+
+
+
 
 Playwright strongly recommends **User-Facing Locators**. These mirror how real users and assistive technology (screen readers) perceive and navigate the page, making your test suite resilient to CSS refactors and DOM restructuring.
 
@@ -261,28 +688,164 @@ await page.getByRole('row')
 
 ---
 
+### CSS Selector Rules & Combinators
+
+While Playwright strongly favors accessible user-facing locators (`getByRole`, `getByLabel`), mastering CSS selectors is essential when working with legacy apps, custom components, or complex DOM structures.
+
+#### 1. Core CSS Selectors Cheatsheet
+
+| Selector Type | Syntax | Playwright Example | Matches |
+| :--- | :--- | :--- | :--- |
+| **Tag Name** | `tag` | `page.locator('input')` | Elements by HTML tag (`<input>`, `<button>`). |
+| **ID** | `#id` | `page.locator('#inputEmail1')` | Element with `id="inputEmail1"`. |
+| **Class** | `.class` | `page.locator('.shape-rectangle')` | Elements containing the class `shape-rectangle`. |
+| **Attribute** | `[attr="val"]` | `page.locator('[placeholder="Email"]')` | Elements with specific attribute name and value. |
+| **Boolean Attribute** | `[attr]` | `page.locator('[disabled]')` or `page.locator('[nbinput]')` | Elements having the attribute, regardless of its value (common for Angular directives). |
+| **Exact Full Class** | `[class="..."]` | `page.locator('[class="btn btn-primary"]')` | ⚠️ **Brittle:** Requires exact full-string match of all classes in exact order. |
+| **Chained Attributes** | `[attr1][attr2]` | `page.locator('[placeholder="Email"][nbinput]')` | Elements matching **both** attributes simultaneously (logical AND). |
+| **Combined Selector** | `tag[attr].class`| `page.locator('input[placeholder="Email"].shape-rectangle')` | Tag + Attribute + Class combined on the **same single element** (no spaces). |
+
+---
+
+#### 2. CSS Combinators: Spaces vs. No Spaces vs. Commas
+
+Understanding whitespace in CSS is critical:
+
+##### A. No Space = Same Element (AND)
+When selector parts touch without spaces, every condition must be true on the **exact same element**:
+```typescript
+// Matches an <input> that has class .shape-rectangle:
+page.locator('input.shape-rectangle')
+```
+
+##### B. Space = Descendant (Parent $\rightarrow$ Child / Inside)
+A space tells the browser: *"Find the right-hand element **inside** the left-hand element (child, grandchild, etc.)"*:
+```typescript
+// Matches any <button> located anywhere INSIDE an <nb-card>:
+page.locator('nb-card button')
+
+// Matches an element with .shape-rectangle INSIDE an <input>:
+page.locator('input .shape-rectangle')
+```
+
+| Syntax | Has Space? | Meaning | Target Element |
+| :--- | :---: | :--- | :--- |
+| `input.shape` | ❌ No | **Same element**: An `<input>` that *itself* has class `.shape`. | The `<input>` |
+| `input .shape` | ✅ Yes | **Descendant**: An element with `.shape` located *inside* `<input>`. | The child element |
+
+##### C. Direct Child (`>`)
+Unlike space (which searches any depth), `>` searches only **immediate children**:
+```typescript
+// Button must be a direct child of .card-body (not inside a deeper wrapper):
+page.locator('.card-body > button')
+```
+
+##### D. Comma (`,`) = OR / Union Selector
+A comma acts as a logical **OR** (matches element A **or** element B):
+```typescript
+// Matches either #btn-accept OR #btn-agree:
+page.locator('#btn-accept, #btn-agree')
+```
+
+> ⚠️ **Strict Mode Gotcha with Commas:**
+> If **both** `#btn-accept` and `#btn-agree` exist on the page simultaneously, calling `.click()` will throw a **Strict Mode Violation**.
+> Use comma selectors for actions primarily when **only one of the two options appears at a time** (e.g. A/B testing variants or cookie consent dialogs).
+
+##### Modern Playwright Alternative for OR: `.or()`
+Playwright provides a built-in `.or()` method that works with user-facing locators:
+```typescript
+const acceptBtn = page.getByRole('button', { name: 'Accept' });
+const agreeBtn = page.getByRole('button', { name: 'I Agree' });
+
+// Click whichever button is present:
+await acceptBtn.or(agreeBtn).click();
+```
+
+---
+
+#### 3. Playwright CSS Text Pseudo-Classes & XPath
+
+Playwright extends standard CSS with custom pseudo-classes:
+
+* **`:text("...")` (Partial match):**
+  Matches elements containing substring text:
+  ```typescript
+  page.locator(':text("Using")') // Matches "Using the Grid"
+  ```
+* **`:text-is("...")` (Exact match):**
+  Matches elements whose complete inner text matches exactly:
+  ```typescript
+  page.locator(':text-is("Using the Grid")')
+  ```
+  *(Modern Playwright recommendation: Prefer `page.getByText('Using the Grid', { exact: true })` over CSS pseudo-classes).*
+
+* **XPath Selectors (`//`):**
+  Playwright supports XPath by prefixing with `//` or `xpath=`:
+  ```typescript
+  page.locator('//*[@id="inputEmail1"]')
+  ```
+  *(⚠️ **Not Recommended:** XPath is brittle, hard to read, and tightly coupled to DOM structure. Always prefer user-facing locators or clean CSS).*
+
+---
+
 ### Strict Mode & Handling Multiple Elements
 
-By default, Playwright operates in **Strict Mode**. If a locator resolves to **more than one** element when an action is executed, Playwright throws an error:
-`Error: strict mode violation: locator('button') resolved to 5 elements`
+By default, Playwright enforces **Strict Mode**. If a locator resolves to **more than one** element when you trigger an action (`click()`, `fill()`, `check()`), Playwright halts execution and throws an error:
 
-#### How to resolve multiple elements:
+```
+Error: strict mode violation: getByText('Charts') resolved to 2 elements
+```
+
+---
+
+#### Why `.first()` is Often a Code Smell (Anti-Pattern)
+
+When faced with a strict mode error, beginners often append `.first()`:
 ```typescript
-const items = page.getByRole('listitem');
+// ⚠️ Brittle workaround:
+await page.getByText('Charts').first().click();
+```
 
-// 1. Pick by index
-await items.first().click();
-await items.last().click();
-await items.nth(2).click(); // 0-based index (3rd item)
+* **Why it is brittle:** `.first()` relies blindly on accidental DOM order. If a new banner, navigation item, or widget is added above the element in a future release, `.first()` will silently click the wrong element or cause confusing test flakes.
 
-// 2. Count elements
-const count = await items.count();
+---
 
-// 3. Iterate over all elements
-for (const item of await items.all()) {
-  console.log(await item.textContent());
+#### The 5 Proper Ways to Resolve Multiple Elements
+
+Instead of `.first()`, use one of these reliable strategies to uniquely identify your target:
+
+| Strategy | When to Use | Playwright Example |
+| :--- | :--- | :--- |
+| **1. Exact Text Matching** | When default substring matching catches partial words (e.g., `"Charts"` matching `"Charts"` and `"Echarts"`). | `page.getByText('Charts', { exact: true })` |
+| **2. Accessible Role** | When text exists inside a container or paragraph, but you want the interactive element. | `page.getByRole('link', { name: 'Charts', exact: true })` |
+| **3. Dedicated Attributes** | When elements have unique attributes (`title`, `data-testid`, `name`). | `page.getByTitle('Charts')`<br>`page.getByTestId('submit-btn')` |
+| **4. Container Scoping (Chaining)** | When identical elements exist in different page sections (e.g., Header vs. Footer). | `page.locator('nb-sidebar').getByText('Charts', { exact: true })` |
+| **5. Parent Filtering (`.filter()`)** | When multiple identical cards/rows exist, and you need to filter by a child's content. | `page.locator('.card').filter({ hasText: 'Product 1' }).getByRole('button')` |
+
+---
+
+#### When Index Picking IS Legitimate
+
+Using indices (`.first()`, `.last()`, `.nth()`) is appropriate when interacting with **inherently ordered collections** (such as search result tables, feed items, or lists):
+
+```typescript
+const tableRows = page.getByRole('row');
+
+// 1. Pick by position in an ordered table:
+await tableRows.first().click();
+await tableRows.last().click();
+await tableRows.nth(2).click(); // 0-based index (3rd row)
+
+// 2. Count total matches:
+const rowCount = await tableRows.count();
+expect(rowCount).toBeGreaterThan(0);
+
+// 3. Iterate through every item in a list:
+for (const row of await tableRows.all()) {
+  console.log(await row.textContent());
 }
 ```
+
 
 ---
 
@@ -666,30 +1229,178 @@ test.describe('Login Functionality', () => {
 
 ---
 
-### Interactive Debugging Techniques
+### Interactive UI Mode (`npx playwright test --ui`) - The Developer Cockpit
 
-#### 1. `await page.pause()`
-Pauses execution and launches the Playwright Inspector at that specific line:
-```typescript
-test('debug step', async ({ page }) => {
-  await page.goto('https://example.com');
-  await page.pause(); // 🛑 Test pauses here! Step through with Inspector.
-  await page.getByRole('button', { name: 'Submit' }).click();
-});
+Playwright's **UI Mode** is the primary visual environment for authoring, running, and debugging tests locally. It integrates the test runner, trace viewer, live network inspector, and locator generator into a unified interactive desktop application.
+
+#### Launching UI Mode
+```bash
+npx playwright test --ui
 ```
 
-#### 2. Trace Viewer (Post-Mortem Analysis)
-Trace Viewer is the most powerful debugging tool in Playwright. It captures:
-* Full DOM snapshots before and after every action.
-* Screenshots, console logs, and network telemetry.
-* Time-travel scrubber.
+#### Core Capabilities & Features
 
-In `playwright.config.ts`, configure trace collection:
-```typescript
-use: {
-  trace: 'on-first-retry', // Options: 'on', 'off', 'retain-on-failure', 'on-first-retry'
-}
+1. **Time-Travel Debugging:**
+   * Step through every action (`goto`, `click`, `fill`, `expect`) in your test suite.
+   * Hover over the timeline scrubber at the top to see the exact state of the page at any millisecond.
+   * View split **Before** and **After** DOM snapshots to see exactly how an element changed after a click or keystroke.
+
+2. **Watch Mode (Eye Icon):**
+   * Click the **Watch (Eye)** icon next to an individual test, a `describe` block, or an entire test file.
+   * Whenever you save changes in your code editor, Playwright automatically re-runs the watched tests in milliseconds.
+
+3. **Pick Locator Tool:**
+   * Click the **Pick Locator** button in the preview pane.
+   * Hover over any live element on the rendered page and click it. Playwright automatically suggests and copies the optimal, accessible locator (e.g., `page.getByRole('button', { name: 'Submit' })`).
+
+4. **Action, Network & Console Telemetry:**
+   * **Action Tab:** Shows action duration, scroll position, and which auto-waiting checks passed (attached, visible, stable, enabled).
+   * **Network Tab:** Inspect every network request triggered by the application, including HTTP status codes, query parameters, request bodies, and JSON responses.
+   * **Console Tab:** Shows real browser `console.log`, warnings, and errors emitted by the web page.
+   * **Source Tab:** Highlights the exact line in your test file that executed each step.
+
+5. **Multi-Browser & Status Filtering:**
+   * Run tests simultaneously or selectively against **Chromium**, **Firefox**, and **WebKit** using the project filter checkboxes.
+   * Filter tests by status (`Passed`, `Failed`, `Skipped`).
+
+---
+
+#### 💡 Troubleshooting: "No tests found" in UI Mode
+If you launch UI Mode and the test sidebar appears empty:
+1. **Wrong Working Directory:** Run `pwd` in your terminal. You must be in the folder containing `playwright.config.ts`. If you are in a parent or sub-folder, `cd` to the project root.
+2. **Active Text Filter:** Check the text search bar at the top of the test list. If there is an accidental character or space, clear it.
+3. **Unchecked Projects:** Under the search bar, verify that at least one project checkbox (`chromium`, `firefox`, `webkit`) is checked.
+4. **Diagnostic Command:** Run `npx playwright test --list` in the terminal to verify Playwright discovers your spec files without syntax errors.
+
+---
+
+### The 7 Debugging Modes in Playwright
+
+Playwright provides a dedicated debugging mode for every stage of development, from real-time step-by-step debugging to post-mortem CI failure analysis.
+
+---
+
+#### Mode 1: Interactive UI Mode (`npx playwright test --ui`)
+* **Best for:** Everyday test development, time-travel scrubbing, watch mode, and picking locators.
+* **How it works:** Opens the full Playwright desktop app where you can see DOM before/after snapshots and re-run tests on file save.
+* **Command:**
+  ```bash
+  npx playwright test --ui
+  ```
+
+---
+
+#### Mode 2: Playwright Inspector (`--debug`)
+* **Best for:** Stepping through test execution line-by-line with a live browser and inspector panel.
+* **How it works:** Automatically launches headed browsers, sets default timeout to infinity, and opens the Playwright Inspector. You can click **"Step over" (F10)**, **"Resume" (F5)**, or edit and evaluate locators live in the page.
+* **Command:**
+  ```bash
+  # Debug all tests:
+  npx playwright test --debug
+
+  # Debug a specific file:
+  npx playwright test tests/example.spec.ts --debug
+
+  # Debug a specific test by line number:
+  npx playwright test tests/example.spec.ts:10 --debug
+  ```
+
+---
+
+#### Mode 3: Programmatic Pause (`await page.pause()`)
+* **Best for:** Pausing execution at a specific line without running the entire suite in debug mode.
+* **How it works:** Insert `await page.pause()` right before the failing step. Playwright will run at normal speed until it hits that line, then pause and open the Inspector.
+* **Example:**
+  ```typescript
+  test('debug specific step', async ({ page }) => {
+    await page.goto('https://example.com');
+    await page.getByRole('button', { name: 'Filter' }).click();
+
+    // 🛑 Execution freezes here! Inspector opens automatically:
+    await page.pause();
+
+    await page.getByRole('button', { name: 'Submit' }).click();
+  });
+  ```
+
+---
+
+#### Mode 4: VS Code / Antigravity IDE Debugger (Native Breakpoints)
+* **Best for:** Debugging both Playwright actions and complex TypeScript/JavaScript variable logic.
+* **How it works:**
+  1. Click in the margin next to any line number in your test file to set a **red breakpoint**.
+  2. Right-click the green "Play" arrow in the gutter and choose **Debug Test** (or click the bug icon).
+  3. Use the standard IDE debug toolbar to step into/over code, view local variables in the Scope pane, and evaluate expressions in the Debug Console.
+
+---
+
+#### Mode 5: Trace Viewer (Post-Mortem Analysis)
+* **Best for:** Investigating flaky or failing tests from CI/CD pipelines without re-running them locally.
+* **How it works:** Records a `.zip` file containing every DOM snapshot, network call, console log, and screenshot.
+* **Commands:**
+  ```bash
+  # 1. Run test and force trace recording:
+  npx playwright test --trace on
+
+  # 2. View the recorded trace:
+  npx playwright show-trace test-results/<test-folder>/trace.zip
+
+  # 3. Or view via HTML report:
+  npx playwright show-report
+  ```
+  *(Alternatively, drag-and-drop `trace.zip` into [trace.playwright.dev](https://trace.playwright.dev)).*
+
+---
+
+#### Mode 6: Headed Mode with Slow-Motion (`--headed` & `--slowmo`)
+* **Best for:** Visually watching the test execute in a real browser at human speed.
+* **How it works:** Runs the real browser visibly and introduces an artificial delay (in milliseconds) between every action.
+* **Command:**
+  ```bash
+  # Slow down each action by 500ms (half a second):
+  npx playwright test --headed --slowmo 500
+  ```
+  *(Can also be set in `playwright.config.ts` under `use: { launchOptions: { slowMo: 500 } }`).*
+
+---
+
+#### Mode 7: Browser DevTools Console (`PWDEBUG=console`)
+* **Best for:** Interacting with Playwright's locator engine directly inside the real Chrome DevTools console (F12).
+* **How it works:** Exposes a global `playwright` object in the browser console.
+* **Command (PowerShell):**
+  ```powershell
+  $env:PWDEBUG="console"
+  npx playwright test --headed
+  ```
+* **Inside the browser F12 Console, you can run:**
+  ```javascript
+  playwright.$('text=Submit')
+  playwright.locator('button.primary')
+  playwright.inspect('button.primary') // Highlights element in DOM tree
+  ```
+
+---
+
+### Verbose Protocol Logs (`DEBUG=pw:api`)
+To print every low-level WebSocket protocol message and actionability check directly to your terminal:
+```powershell
+$env:DEBUG="pw:api"
+npx playwright test
 ```
+
+---
+
+### Quick Comparison: Which Debugging Mode Should You Use?
+
+| Goal / Scenario | Recommended Mode | Flag / Command |
+| :--- | :--- | :--- |
+| **Active Test Development & Tweaking** | **UI Mode** | `npx playwright test --ui` |
+| **Step-by-step Execution with Live DOM** | **Debug Mode** | `npx playwright test --debug` |
+| **Pause at a single tricky line** | **Page Pause** | `await page.pause()` |
+| **Inspect TS Variables & Call Stack** | **IDE Debugger** | Breakpoint $\rightarrow$ *Debug Test* |
+| **Diagnose CI/CD Failures** | **Trace Viewer** | `npx playwright show-trace trace.zip` |
+| **Watch test at human speed** | **Headed + SlowMo** | `npx playwright test --headed --slowmo 500` |
+| **Test locators directly in DevTools** | **Console Mode** | `PWDEBUG=console` |
 
 ---
 

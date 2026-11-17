@@ -1,5 +1,5 @@
 {
-  "name": "js_fundamentals",
+  "name": "playwright-fundamentals",
   "version": "1.0.0",
   "description": "PW course from Zero to Hero - Udemy",
   "license": "ISC",
@@ -7,7 +7,13 @@
   "type": "module",
   "//type_note": "Change 'type' from 'commonjs' to 'module' if you want to use ES6 'import/export' instead of 'require/module.exports'",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report",
+    "codegen": "playwright codegen"
+  },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6"
